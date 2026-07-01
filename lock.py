@@ -12,7 +12,7 @@ Ugly-on-purpose lock screen for Fedora/GNOME.
   is possible without keeping the real passphrase anywhere on disk.
 - Passphrase can be any length and mix letters, numbers, and symbols.
 - After typing the passphrase, you must press Enter 3 times quickly
-  (within 600ms) to actually submit it — a single Enter does nothing.
+  (within 250ms) to actually submit it — a single Enter does nothing.
 
 First run: prompts you to set a passphrase.
 Every run after that: shows the lock.
@@ -59,7 +59,7 @@ UGLY_RED = "#ff2200"
 BG_FALLBACK = "#3a3a3a"
 
 # Enter must be pressed this many times within this window (ms) to submit
-TRIPLE_TAP_WINDOW_MS = 450
+TRIPLE_TAP_WINDOW_MS = 250
 
 
 # ---------------------------------------------------------------------------
