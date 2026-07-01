@@ -25,6 +25,7 @@ Usage:
 import os
 import sys
 import json
+import math
 import hashlib
 import secrets
 import random
@@ -55,8 +56,14 @@ UGLY_YELLOW = "#fbff00"
 UGLY_BLUE = "#0a1a4f"
 UGLY_PINK = "#ff2fb0"
 UGLY_GREEN = "#00ff5e"
+UGLY_LIGHT_GREEN = "#008000"
+UGLY_DARK_GREEN = "#006400"
 UGLY_RED = "#ff2200"
 BG_FALLBACK = "#3a3a3a"
+RING_UNLIT = "#888888"
+
+# Ring is split into this many segments; segments light up on keystrokes
+RING_SEGMENTS = 8
 
 # Enter must be pressed this many times within this window (ms) to submit
 TRIPLE_TAP_WINDOW_MS = 219.5491
@@ -235,14 +242,27 @@ class LockScreen:
         cx, cy = self.width // 2, self.height // 2
         self.cx, self.cy = cx, cy
 
-        # Deliberately garish ring, purely decorative now (no segments)
+        # Deliberately garish ring, now split into lightable segments
         ring_radius = 180
+        self.ring_radius = ring_radius
         self.canvas.create_oval(cx - ring_radius - 10, cy - ring_radius - 10,
                                  cx + ring_radius + 10, cy + ring_radius + 10,
                                  outline=UGLY_PINK, width=6)
-        self.canvas.create_oval(cx - ring_radius, cy - ring_radius,
-                                 cx + ring_radius, cy + ring_radius,
-                                 outline="#888888", width=14)
+
+        # Build the ring out of RING_SEGMENTS arc pieces (with small gaps)
+        # so individual sections can be lit up on keystrokes.
+        self.ring_segment_ids = []
+        n = RING_SEGMENTS
+        gap_deg = 4  # gap between segments, in degrees
+        seg_extent = (360.0 / n) - gap_deg
+        for i in range(n):
+            start_deg = i * (360.0 / n) + gap_deg / 2
+            seg_id = self.canvas.create_arc(
+                cx - ring_radius, cy - ring_radius,
+                cx + ring_radius, cy + ring_radius,
+                start=start_deg, extent=seg_extent,
+                style="arc", outline=RING_UNLIT, width=14)
+            self.ring_segment_ids.append(seg_id)
 
         # ugly yellow square body
         sq = 130
@@ -277,29 +297,19 @@ class LockScreen:
 
     # -- random flash effect --------------------------------------------
     def _flash(self, correct: bool):
-        color = UGLY_GREEN if correct else UGLY_RED
-        margin = 60
-        x = random.randint(margin, self.width - margin)
-        y = random.randint(margin, self.height - margin)
-        r = random.randint(18, 42)
-        flash_id = self.canvas.create_oval(x - r, y - r, x + r, y + r,
-                                            fill=color, outline="")
-        # simple fade: shrink it a few times then delete
-        self._fade_step(flash_id, r, 0)
+        # Pick a random ring segment and light it up briefly, instead of
+        # drawing a random blob on screen.
+        seg_id = random.choice(self.ring_segment_ids)
+        color = UGLY_LIGHT_GREEN if correct else UGLY_RED
+        self.canvas.itemconfig(seg_id, outline=color, width=20)
+        # quick flash: revert to unlit shortly after
+        self.root.after(90, lambda: self._unlight_segment(seg_id))
 
-    def _fade_step(self, flash_id, r, step):
-        if step >= 5:
-            self.canvas.delete(flash_id)
-            return
-        shrink = r * (1 - step / 5)
+    def _unlight_segment(self, seg_id):
         try:
-            coords = self.canvas.coords(flash_id)
-            cx0, cy0 = (coords[0] + coords[2]) / 2, (coords[1] + coords[3]) / 2
-            self.canvas.coords(flash_id, cx0 - shrink, cy0 - shrink,
-                                cx0 + shrink, cy0 + shrink)
-        except (tk.TclError, IndexError):
+            self.canvas.itemconfig(seg_id, outline=RING_UNLIT, width=14)
+        except tk.TclError:
             return
-        self.root.after(60, lambda: self._fade_step(flash_id, r, step + 1))
 
     # -- input handling ------------------------------------------------
     def on_key(self, event):
@@ -316,6 +326,11 @@ class LockScreen:
             self.correctness.append(correct)
             self._flash(correct)
             self._update_progress_dots()
+
+            if not correct:
+                # Wrong character: wipe progress immediately so they have
+                # to start the passphrase over.
+                self.root.after(0, self.reset_attempt)
 
         elif event.keysym == "BackSpace":
             if self.typed:
@@ -338,7 +353,7 @@ class LockScreen:
         if all_correct:
             self.unlock()
         else:
-            self.root.after(300, self.reset_attempt)
+            self.root.after(0, self.reset_attempt)
 
     def reset_attempt(self):
         self.typed = []
