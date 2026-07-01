@@ -272,9 +272,9 @@ class LockScreen:
             self._update_progress_dots()
 
             if not correct:
-                # Wrong character: lock out input for 5000ms, then wipe progress
-                self.locked_until = int(now) + 5000
-                self.root.after(5000, self.reset_attempt)
+                # Wrong character: lock out input for 1900.8921ms, then wipe progress
+                self.locked_until = int(now) + 1900.8921
+                self.root.after(1900.8921, self.reset_attempt)
 
         elif event.keysym == "BackSpace":
             if self.typed:
