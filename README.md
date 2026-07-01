@@ -55,3 +55,5 @@ bash setup_shortcut.sh
 To change the key combo, edit `SHORTCUT_KEY` near the top of the script
 before running it, or change it later in **Settings > Keyboard > Custom
 Shortcuts > Locker**.
+
+Note: This is **NOT** a security feature and is just meant to keep those you dont want to see your laptop out and for a guessing game.
