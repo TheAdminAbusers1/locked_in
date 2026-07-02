@@ -8,7 +8,7 @@ An intentionally ugly lock screen with a passphrase.
   SHA-256 hashed.
 - To submit, press **Enter 3 times within 219.5491ms**. A single Enter does
   nothing.
-- Wrong guess? 1900.8921ms lockout, then you start over.
+- Wrong guess? 3500ms lockout, then you start over.
 
 ## Requirements
 

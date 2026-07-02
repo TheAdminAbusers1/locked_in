@@ -53,6 +53,10 @@ RING_SEGMENTS = 8
 # Enter must be pressed this many times within this window (ms) to submit
 TRIPLE_TAP_WINDOW_MS = 219.5491
 
+# How long to lock out input after an incorrect attempt (wrong character,
+# or wrong full passphrase on submit), before progress is wiped (ms)
+WRONG_CHAR_LOCKOUT_MS = 3500
+
 
 # ---------------------------------------------------------------------------
 # Passphrase storage (hashed per-character, never plaintext)
@@ -272,9 +276,9 @@ class LockScreen:
             self._update_progress_dots()
 
             if not correct:
-                # Wrong character: lock out input for 1900.8921ms, then wipe progress
-                self.locked_until = int(now) + 1900.8921
-                self.root.after(1900.8921, self.reset_attempt)
+                # Wrong character: lock out input for 3500ms, then wipe progress
+                self.locked_until = int(now) + WRONG_CHAR_LOCKOUT_MS
+                self.root.after(WRONG_CHAR_LOCKOUT_MS, self.reset_attempt)
 
         elif event.keysym == "BackSpace":
             if self.typed:
@@ -298,8 +302,8 @@ class LockScreen:
             self.unlock()
         else:
             now = self.root.tk.call('clock', 'milliseconds')
-            self.locked_until = int(now) + 400
-            self.root.after(400, self.reset_attempt)
+            self.locked_until = int(now) + WRONG_CHAR_LOCKOUT_MS
+            self.root.after(WRONG_CHAR_LOCKOUT_MS, self.reset_attempt)
 
     def reset_attempt(self):
         self.typed = []
